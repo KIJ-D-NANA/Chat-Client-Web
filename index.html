@@ -8,28 +8,93 @@
       form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
+      #nick {position : relative};
+	  .col {list-style-type: none; margin: 0; padding: 0; }
+      .col li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
-    </style>
+	  #userlist li:nth-child(even) { background: #eee; }
+	  #messages {width:90%;float:left}
+	  #userlist {width:10%;float:left}
+	  #userlist li {padding-left:0;list-style-type: none;}
+	  .selected {background: rgb(127, 255, 212)}
+	  #hidden {z-index: 2;
+			position: absolute;
+			width:100%;
+			height:100%;
+			background: rgba(0, 0, 0,0.8);
+	  }
+	  #pop { position:absolute;
+			top:50%;
+			left:50%;
+			width:400px;  /* adjust as per your needs */
+			height:100px;   /* adjust as per your needs */
+			margin-left:-200px;   /* negative half of width above */
+			margin-top:-100px;   /* negative half of height above */
+			background: rgb(130, 224, 255); border: none; padding: 10px;	
+			}
+		#pop input{ width: 80%}
+		#pop button { width: 19%}
+	</style>
   </head>
   <body>
-    <ul id="messages"></ul>
-    <form action="">
+	  <div id="hidden">
+			<div id="pop">
+				<h1>Enter Your Nickname</h1>
+				<form id="nick" action="">
+				<input id="n" autocomplete="off" /><button>Send</button>
+				</form>
+			</div>
+		</div>
+    <ul id="messages" class="col"></ul>
+	<ul id="userlist" class="col">
+	<li>asdasd</li>
+	</ul>
+    <form id="chat" action="">
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
+	
     <script src="https://cdn.socket.io/socket.io-1.3.4.js"></script>
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     <script>
       var socket = io();
-      $('form').submit(function(){
-        socket.emit('chat message', $('#m').val());
+	  var name;
+	  $('#nick').submit(function(){
+        name=$('#n').val();
+		if($(".selected").length){
+			name=$(".selected").val();
+		}
+		socket.emit('nick', name);
+		name+=": ";
+		
+		$('#n').val('');
+		$('#hidden').fadeOut();
+		$('#messages').append($('<li>').text("~~~~~~ WELCOME TO OUR WEB CHAT APPLICATION! ~~~~~~"));
+		setInterval(function(){
+		socket.emit('getlist');
+	 },1000);
+        return false;
+      });
+      $('#chat').submit(function(){
+		var msg = $('#m').val();
+        socket.emit('broadcast', msg);
+		$('#messages').append($('<li>').text(name + msg));
         $('#m').val('');
         return false;
       });
-      socket.on('chat message', function(msg){
+	  $('#userlist').on("click","li",function(){
+		 $(this).toggleClass("selected");
+	  });
+      socket.on('reply', function(msg){
         $('#messages').append($('<li>').text(msg));
       });
+	 socket.on('userlist',function(msg){
+		$('#userlist').empty();
+		for(var i=0;i<msg.length;i++){
+			
+			$('#userlist').append($('<li>').text(msg[i]));
+		}
+	 });
+	 
     </script>
   </body>
 </html>
